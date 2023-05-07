@@ -78,10 +78,10 @@ class FlowerClient(fl.client.NumPyClient):
 
         # Record loss
         with open(
-                "./output/loss_records/client_{}.txt".format(self.cid),
-                mode='w'
+                "./output/train_loss/client_{}.txt".format(self.cid),
+                mode='a'
         ) as outputFile:
-            outputFile.write(str(train_loss))
+            outputFile.write(str(train_loss) + "\n")
 
         # End timer
         end_time = time.perf_counter()
@@ -108,6 +108,18 @@ class FlowerClient(fl.client.NumPyClient):
 
         # Evaluate
         loss, accuracy = test(self.net, valloader, device=self.device)
+
+        # Record loss and accuracy
+        with open(
+                "./output/val_loss/client_{}.txt".format(self.cid),
+                mode='a'
+        ) as outputFile:
+            outputFile.write(str(loss) + "\n")
+        with open(
+                "./output/val_accu/client_{}.txt".format(self.cid),
+                mode='a'
+        ) as outputFile:
+            outputFile.write(str(accuracy) + "\n")
 
         # Return statistics
         return float(loss), len(valloader.dataset), {"accuracy": float(accuracy)}
@@ -179,9 +191,15 @@ if __name__ == "__main__":
     if Path("output/fit_server/").exists():
         shutil.rmtree("output/fit_server/")
     os.mkdir("output/fit_server/")
-    if Path("output/loss_records/").exists():
-        shutil.rmtree("output/loss_records/")
-    os.mkdir("output/loss_records/")
+    if Path("output/train_loss/").exists():
+        shutil.rmtree("output/train_loss/")
+    os.mkdir("output/train_loss/")
+    if Path("output/val_accu/").exists():
+        shutil.rmtree("output/val_accu/")
+    os.mkdir("output/val_accu/")
+    if Path("output/val_loss/").exists():
+        shutil.rmtree("output/val_loss/")
+    os.mkdir("output/val_loss/")
 
     client_resources = {
         "num_cpus": args.num_client_cpus
@@ -233,3 +251,20 @@ if __name__ == "__main__":
     )
 
     print(simulation)
+
+    # Check records of last round
+    with open(
+            "./output/fit_server/round_{}.txt".format(num_rounds),
+            mode='r'
+    ) as last_inputFile:
+        clients_of_last_round = eval(last_inputFile.readline())["clients_selected"]
+
+    for _ in range(pool_size):
+        # If the client was not selected in the last round,
+        # help it complete the records
+        if _ not in clients_of_last_round:
+            with open(
+                    "./output/train_loss/client_{}.txt".format(_),
+                    mode='a'
+            ) as last_outputFile:
+                last_outputFile.write("-1" + "\n")

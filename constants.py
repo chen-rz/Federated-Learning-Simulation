@@ -10,6 +10,6 @@ sys_bgNoise = 1e-9
 # Total bandwidth
 sys_bandwidth = 1e6
 # Model size (bit)
-sys_modelSize = 1e9  # TODO model size
+sys_modelSize = 1984192
 # Global time constraint (s)
-timeConstrGlobal = 4000
+timeConstrGlobal = 2000

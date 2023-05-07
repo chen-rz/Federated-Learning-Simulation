@@ -120,7 +120,7 @@ class TCS_ClientManager(SimpleClientManager):
 
         return [self.clients[str(cid)] for cid in available_cids], \
             {
-                "clients_selected": len(available_cids),
+                "clients_selected": available_cids,
                 "data_amount": total_data_amount,
                 "time_elapsed": fit_round_time,
                 "time_constraint": time_constr
@@ -199,7 +199,7 @@ class TCS(Strategy):
             C_T_i = timeConstrGlobal / num_rounds
         else:
             with open(
-                    "./output/fit_server/round_" + str(server_round - 1) + ".txt"
+                    "./output/fit_server/round_{}.txt".format(server_round - 1)
             ) as inputFile:
                 fit_round_dict = eval(inputFile.readline())
                 C_T_i = timeConstrGlobal / num_rounds + \
@@ -212,15 +212,33 @@ class TCS(Strategy):
 
         # Record information of clients
         pandas.DataFrame.from_records(param_dicts).to_excel(
-            "./output/fit_clients/fit_round_" + str(server_round) + ".xlsx"
+            "./output/fit_clients/fit_round_{}.xlsx".format(server_round)
         )
 
         # Record information of server
         with open(
-                "./output/fit_server/round_" + str(server_round) + ".txt",
+                "./output/fit_server/round_{}.txt".format(server_round),
                 mode='w'
         ) as outputFile:
             outputFile.write(str(fit_round_dict))
+
+        # Check train_loss records
+        if server_round > 1:
+            with open(
+                    "./output/fit_server/round_{}.txt".format(server_round - 1),
+                    mode='r'
+            ) as inputFile:
+                clients_of_prev_round = eval(inputFile.readline())["clients_selected"]
+
+            for _ in range(pool_size):
+                # If the client was not selected in the previous round,
+                # help it complete the records
+                if _ not in clients_of_prev_round:
+                    with open(
+                            "./output/train_loss/client_{}.txt".format(_),
+                            mode='a'
+                    ) as outputFile:
+                        outputFile.write("-1" + "\n")
 
         # Return client/config pairs
         return [(client, fit_ins) for client in clients]

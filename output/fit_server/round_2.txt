@@ -1,1 +1,1 @@
-{'clients_selected': 15, 'data_amount': 1197943816, 'time_elapsed': 838.1619015967822, 'time_constraint': 853.9321708115581}
+{'clients_selected': [17, 8, 10, 12, 5, 1, 4, 13, 14, 19, 2, 16, 11, 0, 7, 9, 3], 'data_amount': 1356678904, 'time_elapsed': 487.13890187522577, 'time_constraint': 490.6882801797036}
