@@ -39,7 +39,7 @@ def train(net, trainloader, epochs, device):
             train_loss += loss.item()
             loss.backward()
             optimizer.step()
-    train_loss = train_loss / epochs / len(trainloader)
+    train_loss = train_loss / epochs / len(trainloader.dataset)
     return train_loss
 
 
@@ -55,5 +55,6 @@ def test(net, testloader, device):
             loss += criterion(outputs, labels).item()
             _, predicted = torch.max(outputs.data, 1)
             correct += (torch.Tensor(predicted == labels)).sum().item()
+    loss = loss / len(testloader.dataset)
     accuracy = correct / len(testloader.dataset)
     return loss, accuracy

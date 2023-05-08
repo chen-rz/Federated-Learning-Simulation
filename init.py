@@ -1,7 +1,7 @@
 import os.path
 import random
 
-from simulation.constants import *
+from constants import *
 from dataset_utils import get_cifar_10, do_fl_partitioning
 
 # Download CIFAR-10 dataset
