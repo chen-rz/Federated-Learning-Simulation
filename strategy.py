@@ -304,6 +304,114 @@ class QCS_ClientManager(SimpleClientManager):
             param_dicts
 
 
+class Random_ClientManager(SimpleClientManager):
+    def sample(self, num_clients: int, server_round=0, time_constr=500):
+        # For model initialization
+        if num_clients == 1:
+            return [self.clients[str(random.randint(0, pool_size - 1))]]
+
+        # For evaluation
+        elif num_clients == -1:
+            with open(
+                    "./output/fit_server/round_{}.txt".format(server_round),
+                    mode='r'
+            ) as inputFile:
+                cids_in_fit = eval(inputFile.readline())["clients_selected"]
+            return [self.clients[str(cid)] for cid in cids_in_fit]
+
+        # Sample clients in a random way
+        param_dicts = []
+
+        with open(
+                "./output/fit_server/round_{}.txt".format(server_round),
+                mode='r'
+        ) as inputFile:
+            cid_num = len(eval(inputFile.readline())["clients_selected"])
+
+        cids_tbd = list(range(pool_size))
+        for _ in range(pool_size - cid_num):
+            pop_idx = random.randint(0, len(cids_tbd) - 1)
+            cids_tbd.pop(pop_idx)
+
+        available_cids = cids_tbd.copy()
+        assert len(available_cids) == cid_num
+
+        for n in range(pool_size):
+            # Get each client's parameters
+            param_dicts.append(
+                self.clients[str(n)].get_properties(
+                    flwr.common.GetPropertiesIns(config={}), 68400
+                ).properties.copy()
+            )
+
+            # Record client parameters
+            param_dicts[n]["bandwidth"] = sys_bandwidth / len(available_cids)
+            param_dicts[n]["transRate"] = \
+                param_dicts[n]["bandwidth"] * math.log2(
+                    1 + sys_channelGain * param_dicts[n]["transPower"] / sys_bgNoise
+                )
+            param_dicts[n]["uploadTime"] = sys_modelSize / param_dicts[n]["transRate"]
+            param_dicts[n]["totalTime"] = \
+                param_dicts[n]["updateTime"] + param_dicts[n]["uploadTime"]
+
+        fit_round_time = 0
+        for _ in available_cids:
+            param_dicts[_]["isSelected"] = True
+            if param_dicts[_]["totalTime"] > fit_round_time:
+                fit_round_time = param_dicts[_]["totalTime"]
+
+        return [self.clients[str(cid)] for cid in available_cids], \
+            {
+                "clients_selected": available_cids,
+                "time_elapsed": fit_round_time,
+                "time_constraint": time_constr
+            }, \
+            param_dicts
+
+
+class Full_ClientManager(SimpleClientManager):
+    def sample(self, num_clients: int, server_round=0, time_constr=500):
+        # For model initialization
+        if num_clients == 1:
+            return [self.clients[str(random.randint(0, pool_size - 1))]]
+
+        # All clients are selected
+        param_dicts = []
+        available_cids = list(range(pool_size))
+
+        for n in range(pool_size):
+            # Get each client's parameters
+            param_dicts.append(
+                self.clients[str(n)].get_properties(
+                    flwr.common.GetPropertiesIns(config={}), 68400
+                ).properties.copy()
+            )
+
+            # Record client parameters
+            param_dicts[n]["bandwidth"] = sys_bandwidth / len(available_cids)
+            param_dicts[n]["transRate"] = \
+                param_dicts[n]["bandwidth"] * math.log2(
+                    1 + sys_channelGain * param_dicts[n]["transPower"] / sys_bgNoise
+                )
+            param_dicts[n]["uploadTime"] = sys_modelSize / param_dicts[n]["transRate"]
+            param_dicts[n]["totalTime"] = \
+                param_dicts[n]["updateTime"] + param_dicts[n]["uploadTime"]
+
+        fit_round_time = 0
+        for _ in available_cids:
+            param_dicts[_]["isSelected"] = True
+            if param_dicts[_]["totalTime"] > fit_round_time:
+                fit_round_time = param_dicts[_]["totalTime"]
+
+        return [self.clients[str(cid)] for cid in available_cids], \
+            {
+                "clients_selected": available_cids,
+                "time_elapsed": fit_round_time,
+                "time_constraint": time_constr
+            }, \
+            param_dicts
+
+
 class TCS_QCS(Strategy):
     # pylint: disable=too-many-arguments,too-many-instance-attributes,line-too-long
     def __init__(
@@ -361,7 +469,10 @@ class TCS_QCS(Strategy):
 
     def configure_fit(
             self, server_round: int, parameters: Parameters,
-            client_manager: TCS_ClientManager
+            client_manager: Union[
+                TCS_ClientManager, QCS_ClientManager,
+                Random_ClientManager, Full_ClientManager
+            ]
     ) -> List[Tuple[ClientProxy, FitIns]]:
         """Configure the next round of training."""
         config = {}
@@ -431,7 +542,10 @@ class TCS_QCS(Strategy):
 
     def configure_evaluate(
             self, server_round: int, parameters: Parameters,
-            client_manager: TCS_ClientManager
+            client_manager: Union[
+                TCS_ClientManager, QCS_ClientManager,
+                Random_ClientManager, Full_ClientManager
+            ]
     ) -> List[Tuple[ClientProxy, EvaluateIns]]:
         """Configure the next round of evaluation."""
         # Parameters and config

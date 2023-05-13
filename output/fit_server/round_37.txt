@@ -1,0 +1,1 @@
+{'clients_selected': [8, 5, 18, 17, 16, 14, 2, 15, 10, 4, 13, 0, 7], 'data_amount': 1037551384, 'time_elapsed': 79.29407454159352, 'time_constraint': 80.14981268996372}

@@ -38,11 +38,11 @@ print("CPU/GPU frequency initialization completed")
 # Define cycles per bit
 with open("./parameters/cyclePerBit.txt", mode='w') as outputFile:
     for n in range(pool_size):
-        outputFile.write(str(random.uniform(100, 1000)) + "\n")
+        outputFile.write(str(random.uniform(50, 200)) + "\n")
 print("Cycles per bit initialization completed")
 
 # Define transmission power
 with open("./parameters/transPower.txt", mode='w') as outputFile:
     for n in range(pool_size):
-        outputFile.write(str(random.uniform(1, 5)) + "\n")
+        outputFile.write(str(random.uniform(5e-4, 5e-3)) + "\n")
 print("Transmission power initialization completed")

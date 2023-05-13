@@ -13,7 +13,6 @@ import torchvision
 from flwr.common import Scalar
 from flwr.common.logger import log
 
-from constants import *
 from dataset_utils import get_dataloader
 from utils import Net, train, test
 
@@ -37,7 +36,7 @@ class FlowerClient(fl.client.NumPyClient):
         self.properties["frequency"] = param_dict["frequency"]
         self.properties["transPower"] = param_dict["transPower"]
         self.properties["updateTime"] = \
-            num_rounds * self.properties["cyclePerBit"] * self.properties["dataSize"] \
+            fit_config(0)["epochs"] * self.properties["cyclePerBit"] * self.properties["dataSize"] \
             / self.properties["frequency"]
 
     def get_properties(self, config) -> Dict[str, Scalar]:

@@ -29,7 +29,7 @@ def train(net, trainloader, epochs, device):
     """Train the network on the training set."""
     criterion = torch.nn.CrossEntropyLoss()
     train_loss = 0.0
-    optimizer = torch.optim.SGD(net.parameters(), lr=0.01, momentum=0.9)
+    optimizer = torch.optim.SGD(net.parameters(), lr=0.0001, momentum=0.9)
     net.train()
     for _ in range(epochs):
         for images, labels in trainloader:

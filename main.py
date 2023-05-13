@@ -4,7 +4,6 @@ import shutil
 from pathlib import Path
 
 import flwr as fl
-import flwr.server.strategy
 
 from strategy import *
 
@@ -22,12 +21,13 @@ if __name__ == "__main__":
         root="./data", train=False, transform=cifar10Transformation()
     )
 
-    path_to_init = ["fit_clients", "fit_server", "loss_avg",
-                    "train_loss", "val_accu", "val_loss"]
-    for _ in path_to_init:
-        if Path("output/" + _ + "/").exists():
-            shutil.rmtree("output/" + _ + "/")
-        os.mkdir("output/" + _ + "/")
+    if args.mode != "Random":
+        path_to_init = ["fit_clients", "fit_server", "loss_avg",
+                        "train_loss", "val_accu", "val_loss"]
+        for _ in path_to_init:
+            if Path("output/" + _ + "/").exists():
+                shutil.rmtree("output/" + _ + "/")
+            os.mkdir("output/" + _ + "/")
 
     client_resources = {
         "num_cpus": args.num_client_cpus
@@ -58,29 +58,25 @@ if __name__ == "__main__":
     # (optional) specify Ray config
     ray_init_args = {
         "include_dashboard": True,
-        "log_to_driver": True
+        "log_to_driver": False
     }
 
     # Configure the strategy
-    if args.mode in ["TCS", "QCS"]:
-        strategy = TCS_QCS(
-            on_fit_config_fn=clt.fit_config,
-            # centralised evaluation of global model
-            evaluate_fn=clt.get_evaluate_fn(testset),
-        )
-    else:
-        strategy = flwr.server.strategy.FedAvg(
-            min_available_clients=pool_size,
-            on_fit_config_fn=clt.fit_config,
-            # centralised evaluation of global model
-            evaluate_fn=clt.get_evaluate_fn(testset),
-        )
+    strategy = TCS_QCS(
+        on_fit_config_fn=clt.fit_config,
+        # centralised evaluation of global model
+        evaluate_fn=clt.get_evaluate_fn(testset),
+    )
 
     # Configure the client manager
     if args.mode == "TCS":
         client_manager = TCS_ClientManager()
     elif args.mode == "QCS":
         client_manager = QCS_ClientManager()
+    elif args.mode == "Random":
+        client_manager = Random_ClientManager()
+    elif args.mode == "Full":
+        client_manager = Full_ClientManager()
     else:
         client_manager = SimpleClientManager()
 
@@ -96,6 +92,13 @@ if __name__ == "__main__":
     )
 
     print(simulation)
+
+    with open("./output/losses_centralized.txt", mode='w') as outputFile:
+        outputFile.write(str(simulation.losses_centralized))
+    with open("./output/losses_distributed.txt", mode='w') as outputFile:
+        outputFile.write(str(simulation.losses_distributed))
+    with open("./output/metrics_centralized.txt", mode='w') as outputFile:
+        outputFile.write(str(simulation.metrics_centralized))
 
     # Check records of last round
     with open(
