@@ -233,12 +233,16 @@ class QCS_ClientManager(SimpleClientManager):
                     L_2 = eval(inputFile.readline())
                 if n in cids_in_prev_round:
                     assert loss_of_prev_round[n] > 0
-                    param_dicts[n]["mu"] = \
-                        (L_2 - loss_of_prev_round[n]) * param_dicts[n]["dataSize"]
+                    delta = L_2 - loss_of_prev_round[n]
+                    if delta < 0:
+                        delta = 1 / (-delta)
+                    param_dicts[n]["mu"] = delta * param_dicts[n]["dataSize"]
                 else:
                     assert loss_of_prev_round[n] == -1
-                    param_dicts[n]["mu"] = \
-                        (L_2 - L_prev) * param_dicts[n]["dataSize"]
+                    delta = L_2 - L_prev
+                    if delta < 0:
+                        delta = 1 / (-delta)
+                    param_dicts[n]["mu"] = delta * param_dicts[n]["dataSize"]
 
             param_dicts[n]["isSelected"] = False
 
@@ -262,7 +266,7 @@ class QCS_ClientManager(SimpleClientManager):
                     continue
 
                 # argmax
-                max_mu = float("-inf")
+                max_mu = 0
                 index_with_max_mu = -1
                 for s in S:
                     if param_dicts[s]["mu"] > max_mu:
@@ -375,6 +379,10 @@ class Full_ClientManager(SimpleClientManager):
         if num_clients == 1:
             return [self.clients[str(random.randint(0, pool_size - 1))]]
 
+        # For evaluation
+        elif num_clients == -1:
+            return [self.clients[str(cid)] for cid in range(pool_size)]
+        
         # All clients are selected
         param_dicts = []
         available_cids = list(range(pool_size))

@@ -13,7 +13,7 @@ train_path, testset = get_cifar_10()
 # This will create a new directory called "federated" in the directory where CIFAR-10 lives.
 # Inside it, there will be N=pool_size subdirectories each with its own train/set split.
 fed_dir = do_fl_partitioning(
-    train_path, pool_size=pool_size, alpha=1000, num_classes=10, val_ratio=0.1
+    train_path, pool_size=pool_size, alpha=1, num_classes=10, val_ratio=0.1
 )
 
 # Record dataset sizes (bit)
